@@ -1,0 +1,4 @@
+---
+# defaults file for odoo-backup
+user: odoo
+bakdir: '/root/backups'

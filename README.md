@@ -22,6 +22,10 @@ Deploy a specific version: checkout code, generate bin files and start services,
 
 > ansible-playbook odoo-deploy-version --extra-var version=14.0
 
+To create the backup of an Odoo Instance (database and filestore). This will create a backup in `/root/backups/` (as `root` user).
+
+> ansible-playbook odoo-backup --extra-var dbname=my_database
+
 
 ## Wordpress
 
