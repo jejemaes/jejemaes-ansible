@@ -1,0 +1,35 @@
+---
+# tasks file for odoo-deploy-version
+
+# checkout branches
+- name: Clone odoo git repo
+  become: yes
+  become_user: "{{ user }}"
+  git: dest=/home/{{ user }}/src/odoo/{{ version }}/ clone=yes update=yes repo=https://github.com/odoo/odoo.git version={{ version }}
+
+- name: Check if jejemaes odoo branch {{ version }} exists
+  shell: git ls-remote --heads https://github.com/jejemaes/odoo-custom-addons.git {{ version }} | wc -l
+  register: jejemaes_branch_exists
+
+- name: Clone jejemaes git repo (if branch exists)
+  become: yes
+  become_user: "{{ user }}"
+  git: dest=/home/{{ user }}/src/jejemaes/{{ version }}/ clone=yes update=yes repo=https://github.com/jejemaes/odoo-custom-addons.git version={{ version }}
+  when: jejemaes_branch_exists.stdout == '1'
+
+# service creation
+- name: Check that the odoo service {{ version }} exists
+  stat:
+    path: "/home/{{ user }}/bin/openerp-{{ version }}"
+  register: stat_result
+
+- name: If service exists, restart odoo {{ version }}
+  service:
+    name: openerp-{{ version }}
+    state: restarted
+  when: stat_result.stat.exists
+
+- name: If service does not exists, create and enable it
+  include_tasks:
+    file: create_service.yml
+  when: not stat_result.stat.exists

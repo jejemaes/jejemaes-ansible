@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+ME=`basename $0`
+PREFIX=${ME:0:8}
+if [ $PREFIX != "openerp-" ]; then
+    echo "Invalid prefix: $PREFIX. expected 'openerp-'" >&2
+    exit 1;
+fi;
+
+BRANCH=${ME:8}
+if [ -z $BRANCH ]; then
+    echo "Must end with branch nick" >&2
+    exit 1;
+fi;
+
+_min() {
+    echo $[$1>$2?$2:$1]
+}
+_max() {
+    echo $[$1<$2?$2:$1]
+}
+
+source `dirname $0`/addons-path.sh $BRANCH
+
+CLOUD_DIR=$(pwd)
+SRCROOT=$HOME/src/odoo/$BRANCH
+
+RUNNING_SERIES=$[$(sudo ls -1 | grep openerp | wc -l) - 1]     # count how much file with 'openerp' in their name
+
+# Workers = nbr of processor +1, with a minimum of 6 and
+# a maximum of 12 as it can trigger bugs in the kernel scheduler
+# when we have 1000+ processes, and each worker can create
+# db_maxconn PG worker processes.
+CPU_COUNT=$(grep -c processor /proc/cpuinfo)
+# 3 worker min, 6 workers max
+WORKERS=$(_min $(_max 3 $[CPU_COUNT / 2 + 1]) 6)
+# Only one cron we report failing jobs in +10 rounds
+CRONS=1
+
+if [ -z $OE_PORT ]; then
+    OE_PORT=$(sudo $HOME/bin/odoo_get_port.py $BRANCH)
+fi
+if [ -z $LONGPOLLPORT ]; then
+    LONGPOLLPORT=$(sudo $HOME/bin/odoo_get_port.py $BRANCH --longpolling)
+fi
+
+OPTIONS="--unaccent --db_maxconn=32 --no-database-list --xmlrpc-interface=127.0.0.1 --xmlrpc-port=$OE_PORT --proxy-mode --logfile=$HOME/log/openerp-${BRANCH}.log --db-filter=^(%h)\$"
+OPTIONS="$OPTIONS --longpolling-port=$LONGPOLLPORT --load=$WORKER_ADDONS --without-demo"
+
+
+GEOIP_DB='/usr/share/GeoIP/GeoLite2-City.mmdb'
+
+if [[ -f $GEOIP_DB ]]; then
+    OPTIONS="$OPTIONS --geoip-db=$GEOIP_DB"
+fi;
+
+MEMORY_SLOTS=$[$RUNNING_SERIES + 1]     # keep some memory for postgres
+TOTAL_MEMORY=$(free -b |  grep Mem | awk '{print $2}')
+
+MEM_SOFT=$[$TOTAL_MEMORY / $MEMORY_SLOTS / ($WORKERS+1)]    # count gevent worker
+MEM_HARD=$[$MEM_SOFT + 1*1024*1024*1024]    # 1GB more for the hard limit
+
+CPU_REAL=2700       # downloading a 3GB database backup take a long time...
+CPU_TIME=900
+
+# let enough time to create a demo database it currenlty take around 6min, 20min should be enough for everyone
+#OPTIONS="$OPTIONS --workers=$WORKERS --max-cron-threads=$CRONS --limit-memory-soft=$MEM_SOFT --limit-memory-hard=$MEM_HARD --limit-time-real=$CPU_REAL --limit-time-cpu=$CPU_TIME"
+OPTIONS="$OPTIONS --workers=$WORKERS --max-cron-threads=$CRONS  --limit-time-real=$CPU_REAL --limit-time-cpu=$CPU_TIME"
+
+# NOTE: DO NOT use new cli syntax as it has nasty side effect when importing all modules
+# in non-topological order. As saas-dump dir is not cleared at module load since a few months,
+# this hack is not needed anymore.
+
+if [[ "$1" == "shell" ]]; then
+    shift
+    OPTIONS="shell $OPTIONS --no-xmlrpc --logfile="
+fi;
+
+BIN=$SRCROOT/odoo-bin  # our cloud only support >= 11.0
+
+exec $BIN --addons-path=${ADDONS} $OPTIONS "$@"

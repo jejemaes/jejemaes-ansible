@@ -1,0 +1,11 @@
+---
+- name: Setup Odoo Server
+  hosts: cloud
+  remote_user: root
+  vars:
+    user: odoo
+
+  tasks:
+    - name: "Setup up odoo server (common)"
+      include_role:
+        name: odoo-setup

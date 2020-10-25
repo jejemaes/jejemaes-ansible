@@ -1,0 +1,15 @@
+---
+# tasks file for odoo-create-db
+
+- name: Check if database exists
+  shell:
+    cmd: psql -lqt | cut -d \| -f 1 | grep -wc {{ dbname }}
+  register: dbstatus
+  failed_when: "dbstatus.stdout|bool == True"
+
+- name: Create database with odoo {{ version }}
+  become: yes
+  become_user: "{{ user }}"
+  shell:
+    cmd: ./openerp-{{ version }} -d {{ dbname }} --stop-after-init --logfile=/home/{{ user }}/log/initdb-{{ version }}-{{ dbname }}
+    chdir: /home/{{ user }}/bin/

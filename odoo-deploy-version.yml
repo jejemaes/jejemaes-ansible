@@ -1,0 +1,13 @@
+---
+- name: Deploy Odoo Version
+  hosts: cloud
+  remote_user: root
+  vars:
+    user: odoo
+    version: "12.0"
+
+  tasks:
+    - name: "Deploy Odoo Version {{ version }}"
+      include_role:
+        name: odoo-deploy-version
+

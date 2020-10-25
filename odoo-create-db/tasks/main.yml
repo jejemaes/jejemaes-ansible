@@ -1,0 +1,6 @@
+---
+# tasks file for odoo-create-db
+
+- name: Create the database
+  include: nginx.yml
+  # include: database.yml

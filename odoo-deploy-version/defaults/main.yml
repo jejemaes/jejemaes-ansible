@@ -1,0 +1,4 @@
+---
+# defaults file for odoo-deploy-version
+user: odoo
+version: "12.0"

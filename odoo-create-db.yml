@@ -1,0 +1,13 @@
+---
+- name: Create Odoo database
+  hosts: cloud
+  remote_user: root
+  vars:
+    dbanme: db-test
+    version: "12.0"
+
+  tasks:
+    - name: "Create Odoo database {{ version }}"
+      include_role:
+        name: odoo-create-db
+
