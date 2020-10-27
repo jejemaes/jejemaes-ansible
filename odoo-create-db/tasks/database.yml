@@ -7,9 +7,18 @@
   register: dbstatus
   failed_when: "dbstatus.stdout|bool == True"
 
+- name: "Extract odoo port for {{ version }}"
+  shell:
+    cmd: python /home/{{ user }}/bin/odoo_get_port.py {{ version }}
+  register: portstatus
+
+- debug: msg="{{ dbstatus.stdout }}"
+- debug: msg="{{ portstatus.stdout|int + 1 }}"
+
 - name: Create database with odoo {{ version }}
   become: yes
   become_user: "{{ user }}"
   shell:
-    cmd: ./openerp-{{ version }} -d {{ dbname }} --stop-after-init --logfile=/home/{{ user }}/log/initdb-{{ version }}-{{ dbname }}
+    cmd: ./openerp-{{ version }} -d {{ dbname }} --stop-after-init --logfile=/home/{{ user }}/log/initdb-{{ version }}-{{ dbname }} --xmlrpc-port={{ portstatus.stdout|int + 1 }}
     chdir: /home/{{ user }}/bin/
+  when: dbstatus.stdout|bool == False

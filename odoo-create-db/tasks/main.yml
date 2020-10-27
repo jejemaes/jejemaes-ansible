@@ -1,6 +1,12 @@
 ---
 # tasks file for odoo-create-db
 
+- name: "Transfrom domain into dbname"
+  set_fact:
+    dbname: "{{ domain | regex_replace('\\.', '_') }}"
+
 - name: Create the database
-  include: nginx.yml
-  # include: database.yml
+  include_tasks:
+    file: nginx.yml
+  include_tasks:
+    file: database.yml

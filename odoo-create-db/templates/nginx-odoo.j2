@@ -1,8 +1,8 @@
 #odoo server
-upstream odoo{{ version }} {
+upstream odoo{{ version | regex_replace('\\.', '') }} {
     server 127.0.0.1:{{ port }};
 }
-upstream odoochat{{ version }} {
+upstream odoochat{{ version | regex_replace('\\.', '') }} {
     server 127.0.0.1:{{ longpollingport }};
 }
 
@@ -19,17 +19,17 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Odoo-Dbname {{ dbname }}
+    proxy_set_header X-Odoo-Dbname {{ dbname }};
 
     # Redirect longpoll requests to odoo longpolling port
     location /longpolling {
-            proxy_pass http://odoochat{{ version }};
+        proxy_pass http://odoochat{{ version | regex_replace('\\.', '') }};
     }
 
     # Redirect requests to odoo backend server
     location / {
-      proxy_redirect off;
-      proxy_pass http://odoo{{ version }};
+        proxy_redirect off;
+        proxy_pass http://odoo{{ version | regex_replace('\\.', '') }};
     }
 
     # common gzip

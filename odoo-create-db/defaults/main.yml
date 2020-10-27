@@ -2,6 +2,5 @@
 # defaults file for odoo-create-db
 version: 12.0
 use_ssl: yes
-dbname: 'odoodbtest'
 user: odoo
 domain: "www.prout.com"
