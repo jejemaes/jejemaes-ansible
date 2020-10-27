@@ -33,6 +33,8 @@
     - python3-ofxparse
     - python3-openid
     - python3-passlib
+    - python3-pdfminer
+    - python3-phonenumbers
     - python3-pil
     - python3-pip
     - python3-psutil
@@ -40,18 +42,31 @@
     - python3-pydot
     - python3-pyparsing
     - python3-pypdf2
+    - python3-pyldap
+    - python3-qrcode
     - python3-reportlab
     - python3-requests
+    - python3-renderpm
+    - python3-setuptools
     - python3-setproctitle
     - python3-simplejson
+    - python3-slugify
     - python3-tz
     - python3-unittest2
     - python3-vatnumber
+    - python3-vobject
     - python3-werkzeug
     - python3-xlrd
     - python3-xlsxwriter
+    - python3-xlwt
     - python3-yaml
     - vim
+    - xz-utils
+
+- name: Install python lisass
+  become: yes
+  pip:
+    name: libsass
 
 - name: "Create Odoo User"
   user: name={{ user }} comment="Odoo User" shell=/bin/bash create_home=yes state=present
