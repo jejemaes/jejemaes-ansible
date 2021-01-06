@@ -1,0 +1,8 @@
+---
+# defaults file for odoo-generate-nginx
+---
+# defaults file for odoo-create-db
+version: 12.0
+use_ssl: yes
+user: odoo
+domain: "www.prout.com"

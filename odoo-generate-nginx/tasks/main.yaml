@@ -1,0 +1,16 @@
+---
+# tasks file for odoo-create-db
+
+- name: "Transfrom domain into dbname"
+  set_fact:
+    dbname: "{{ domain | regex_replace('\\.', '_') }}"
+
+- name: Setup the Nginx config, with SSL
+  include_tasks:
+    file: nginx-ssl.yml
+  when: use_ssl
+
+- name: Setup the Nginx config, without SSL
+  include_tasks:
+    file: nginx-no-ssl.yml
+  when: not use_ssl

@@ -5,8 +5,10 @@
   set_fact:
     dbname: "{{ domain | regex_replace('\\.', '_') }}"
 
-- name: Create the database
+- name: Setup the Nginx config
   include_tasks:
     file: nginx.yml
-  include_tasks:
-    file: database.yml
+
+# - name: Create the database
+#   include_tasks:
+#     file: database.yml
