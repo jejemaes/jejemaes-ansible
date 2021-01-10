@@ -1,0 +1,70 @@
+---
+
+- fail: msg="'dbname' is mandatory"
+  when: dbname is undefined or not dbname
+
+# fetch database info from metabase
+
+- name: "Metabase: fetch db info {{ dbname }}"
+  community.general.postgresql_query:
+    db: meta
+    query: "
+      SELECT
+        D.id AS id,
+        D.name AS name,
+        D.use_backup AS use_backup,
+        V.version AS version,
+        V.port AS port,
+        V.longpolling_port AS longpolling_port
+      FROM
+        odoo_database D,
+        odoo_version V
+      WHERE D.version_id = V.id
+        AND name = %(dbname)s
+      LIMIT 1
+    "
+    named_args:
+      dbname: "{{ dbname }}"
+    login_user: root
+  register: result_meta
+  failed_when: not result_meta.rowcount
+
+- name: "Transform result into JSON"
+  set_fact:
+    db_info: "{{ result_meta.query_result[0] }}"
+
+- name: "Metabase: fetch domains"
+  community.general.postgresql_query:
+    db: meta
+    query: SELECT * FROM domain WHERE service_id = %(service_id)s
+    named_args:
+      service_id: "{{ db_info['id'] }}"
+    login_user: root
+  register: result_meta
+  failed_when: not result_meta.rowcount
+
+- name: "Transform result into JSON"
+  set_fact:
+    domain_info_list: "{{ result_meta.query_result }}"
+
+# create nginx file
+
+- name: "Create nginx config file {{ db_info['name'] }}"
+  become: yes
+  template:
+    src: "templates/nginx-odoo-db.j2"
+    dest: "/etc/nginx/sites-available/{{ db_info['name'] }}"
+    owner: "root"
+    group: "root"
+    mode: '0644'
+    force: yes
+  vars:
+    - port: "{{ db_info['port'] }}"
+    - longpollingport: "{{ db_info['longpolling_port'] }}"
+    - dbname: "{{ db_info['name'] }}"
+    - domain_list: "{{ domain_info_list }}"
+
+- name: "Enable nginx config {{ db_info['name'] }}"
+  become: yes
+  file: src=/etc/nginx/sites-available/{{ db_info['name'] }} dest=/etc/nginx/sites-enabled/{{ db_info['name'] }} state=link
+  notify: nginx reload

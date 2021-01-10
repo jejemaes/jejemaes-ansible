@@ -1,0 +1,17 @@
+---
+
+- fail: msg="'dbname' is mandatory"
+  when: dbname is undefined or not dbname
+
+# remove symblink and nginx file
+
+- name: Remove nginx symlink of {{ dbname }}
+  file:
+    path: "/etc/nginx/sites-enabled/{{ dbname }}"
+    state: absent
+  notify: nginx reload
+
+- name: Remove nginx config of {{ dbname }}
+  file:
+    path: "/etc/nginx/sites-available/{{ dbname }}"
+    state: absent

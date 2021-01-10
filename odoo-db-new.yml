@@ -1,0 +1,35 @@
+---
+- name: New Odoo Database (db + nginx)
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    dbname: no
+    domains: no
+    version: no
+
+  tasks:
+
+    - name: Create Odoo Database {{ dbname }}
+      include_role:
+        name: odoo-database
+        tasks_from: db-create
+      vars:
+        domain: "{{ domain }}"
+        version: "{{ version }}"
+
+    - name: "Add domains for {{ dbname }}"
+      include_role:
+        name: common-domain
+        tasks_from: domain-create
+      vars:
+        domain: "{{ item }}"
+        service_name: "{{ dbname }}"
+      with_items: "{{ domains.split(',') }}"
+
+    - name: Generate nginx config for {{ dbname }}
+      include_role:
+        name: odoo-database
+        tasks_from: nginx-create
+      vars:
+        dbname: "{{ dbname }}"
+

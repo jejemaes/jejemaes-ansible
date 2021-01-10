@@ -1,0 +1,18 @@
+---
+- name: Update Odoo Version
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    version: "14.0"
+
+  tasks:
+    - name: Update Source Code
+      include_role:
+        name: odoo-checkout-source
+      vars:
+        version: "{{ version }}"
+
+    - name: Restart service Odoo {{ version }}
+      service:
+        name: odoo-{{ version }}
+        state: restarted

@@ -1,0 +1,28 @@
+---
+- name: Setup Odoo Metabase
+  hosts: odoo-cloud
+  remote_user: root
+
+  tasks:
+
+    - name: "Create the metabase"
+      postgresql_db:
+        name: meta
+        state: present
+        owner: root
+        login_user: root
+
+    - name: Copy metabase SQL file to server
+      copy: src=files/metabase.sql dest=/tmp/meta.sql
+
+    - name: Import SQL in metabase
+      shell: psql meta < /tmp/meta.sql
+
+    - name: Remove metabase SQL file
+      file:
+        path: /tmp/meta.sql
+        state: absent
+
+    - name: Create Odoo Metbase Part
+      include_role:
+        name: odoo-metabase

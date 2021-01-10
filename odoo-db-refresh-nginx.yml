@@ -1,0 +1,12 @@
+---
+- name: Refresh nginx config for Odooo Domain
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    dbname: no
+
+  tasks:
+    - name: Refresh nginx config for {{ dbname }}
+      include_role:
+        name: odoo-database
+        tasks_from: nginx-create

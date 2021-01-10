@@ -1,0 +1,43 @@
+---
+- name: Setup Odoo Server
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    user: odoo
+
+  tasks:
+
+    # common pkg dependencies
+
+    - name: Installation de Libs
+      apt: name={{ item }} update_cache=yes state=latest
+      with_items:
+        - debconf-utils
+        - git
+        - htop
+        - jq
+        - nginx
+        - postgresql
+        - postgresql-contrib
+        - vim
+        - xz-utils
+
+    # backup directory
+
+    - name: Directory for backups
+      file:
+        path: /home/backup
+        state: directory
+
+    # setup Odoo
+
+    - name: Setup Odoo
+      include_role:
+        name: odoo-setup
+
+    # setup Web
+
+    # metabase
+
+    - name: Include metabase playbook
+      import_playbook: commmon-metabase.yaml

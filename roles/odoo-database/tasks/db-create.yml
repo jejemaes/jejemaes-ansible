@@ -1,0 +1,66 @@
+---
+
+- fail: msg="'dbname' is mandatory"
+  when: dbname is undefined or not dbname
+
+- fail: msg="'version' is mandatory"
+  when: version is undefined or not version
+
+# version check and info
+
+- name: "Metabase: Check if {{ version }} exits"
+  community.general.postgresql_query:
+    db: meta
+    query: SELECT * FROM odoo_version WHERE version = %(version)s
+    named_args:
+      version: "{{ version }}"
+    login_user: root
+  register: result_meta
+  failed_when: not result_meta.rowcount
+
+- name: "Transform result into JSON"
+  set_fact:
+    version_info: "{{ result_meta.query_result[0] }}"
+
+# create the database
+
+- name: Check if database exists
+  shell:
+    cmd: psql -lqt | cut -d \| -f 1 | grep -wc {{ dbname }}
+  register: dbstatus
+  failed_when: "dbstatus.stdout|bool == True"
+
+- name: "Extract config for Odoo {{ version }}"
+  shell:
+    cmd: python3 /home/{{ odoo_user }}/bin/odoo_get_config.py {{ version }} /home/{{ odoo_user }}/src/
+  register: raw_config
+
+- name: "Transform config into JSON"
+  set_fact:
+    config: "{{ raw_config.stdout | from_json }}"
+
+- name: Create database with Odoo {{ version }}
+  become: yes
+  become_user: "{{ odoo_user }}"
+  shell:
+    cmd: /home/{{ odoo_user }}/venvs/odoo-{{ version }}-venv/bin/python /home/{{ odoo_user }}/src/odoo/{{ version }}/odoo-bin -d {{ dbname }} --stop-after-init --logfile=/home/{{ odoo_user }}/log/odoo-{{ version }}-init-{{ dbname }}.log --xmlrpc-port={{ config['xmlrpc_port'] - 1 }}
+
+# register database
+
+- name: "Metabase: Remove possible database entry"
+  community.general.postgresql_query:
+    db: meta
+    query: DELETE FROM odoo_database WHERE name = %(dbname)s
+    named_args:
+      dbname: "{{ dbname }}"
+    login_user: root
+
+- name: "Metabase: Insert Odoo Database {{ dbname }} in metabase"
+  community.general.postgresql_query:
+    db: meta
+    login_user: root
+    query: INSERT INTO odoo_database (name, version_id, use_backup) VALUES (%(dbname)s, %(version_id)s, 't')
+    named_args:
+      dbname: "{{ dbname }}"
+      version_id: "{{ version_info['id'] }}"
+

@@ -1,0 +1,34 @@
+---
+
+- fail: msg="'domain' is mandatory"
+  when: domain is undefined or not domain
+
+# TODO: cerbot install in common-setup
+# TODO no sure this certbot certonly -D www.domain.tld will work in non interactive mode.....
+
+# create SSL certificate with certbot, but not add it to nginx config
+
+- name: Check cert already exists for {{ domain }}
+  stat:
+    path: "/etc/letsencrypt/live/{{ domain }}"
+  register: stat_result
+
+- name: "Generate certificate for {{ domain }}"
+  shell:
+    cmd: certbot certonly --noninteractive --nginx -d {{ domain }}
+  register: certbot_output
+  when: not stat_result.stat.exists
+
+- debug:
+    msg: "{{ certbot_output }}"
+  when: not stat_result.stat.exists
+
+# update domain
+
+- name: "Metabase: Update domain {{ domain }} in metabase"
+  community.general.postgresql_query:
+    db: meta
+    login_user: root
+    query: UPDATE domain SET use_ssl = 't' WHERE name = %(name)s
+    named_args:
+      name: "{{ domain }}"

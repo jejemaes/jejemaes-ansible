@@ -1,0 +1,22 @@
+---
+- name: Remove Odoo Database
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    dbname: no
+
+  tasks:
+
+    - name: Remove nginx config for {{ db_info['domain'] }}
+      include_role:
+        name: odoo-database
+        tasks_from: nginx-remove
+      vars:
+        dbname: "{{ dbname }}"
+
+    - name: Remove Odoo Database {{ dbname }}
+      include_role:
+        name: odoo-database
+        tasks_from: db-remove
+      vars:
+        dbname: "{{ dbname }}"

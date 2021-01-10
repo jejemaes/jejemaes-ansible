@@ -1,0 +1,46 @@
+---
+
+- fail: msg="'domain' is mandatory"
+  when: domain is undefined or not domain
+
+- fail: msg="'service_name' is mandatory"
+  when: service_name is undefined or not service_name
+
+# register domain
+
+- name: "Metabase: Remove possible database entry"
+  community.general.postgresql_query:
+    db: meta
+    query: DELETE FROM domain WHERE name = %(domain)s
+    named_args:
+      domain: "{{ domain }}"
+    login_user: root
+
+- name: "Metabase: fetch db info {{ service_name }}"
+  community.general.postgresql_query:
+    db: meta
+    query:
+      SELECT
+        *
+      FROM
+        service_instance
+      WHERE name = %(dbname)s
+      LIMIT 1
+    named_args:
+      dbname: "{{ service_name }}"
+    login_user: root
+  register: result_meta
+  failed_when: not result_meta.rowcount
+
+- name: "Transform result into JSON"
+  set_fact:
+    service_info: "{{ result_meta.query_result[0] }}"
+
+- name: "Metabase: Insert domain {{ domain }} in metabase"
+  community.general.postgresql_query:
+    db: meta
+    login_user: root
+    query: INSERT INTO domain (name, use_ssl, service_id) VALUES (%(name)s, 'f', %(service_id)s)
+    named_args:
+      name: "{{ domain }}"
+      service_id: "{{ service_info['id'] }}"

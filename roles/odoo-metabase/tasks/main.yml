@@ -1,0 +1,12 @@
+---
+
+- name: Copy odoo metabase SQL file to server
+  copy: src=files/odoo-metabase-part.sql dest=/tmp/odoo-meta.sql
+
+- name: Import SQL in metabase
+  shell: psql meta < /tmp/odoo-meta.sql
+
+- name: Remove odoo metabase SQL file
+  file:
+    path: /tmp/odoo-meta.sql
+    state: absent

@@ -1,0 +1,47 @@
+---
+- name: Create SSL certificate for a Domain
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    domain: no
+
+  tasks:
+
+    - name: "Metabase: fetch domain"
+      community.general.postgresql_query:
+        db: meta
+        query:
+          SELECT
+            D.name AS domain,
+            S.name AS service_name
+          FROM domain D, service_instance S
+          WHERE
+            D.name = %(dom)s
+            AND D.service_id = S.id
+        named_args:
+          dom: "{{ domain }}"
+        login_user: root
+      register: result_meta
+
+    - debug:
+        msg: "{{ result_meta }}"
+
+    - name: "Transform result into JSON"
+      set_fact:
+        service_info: "{{ result_meta.query_result[0] }}"
+      failed_when: not result_meta.rowcount
+
+    - name: Generate SSL certificate for {{ domain }}
+      include_role:
+        name: common-domain
+        tasks_from: add-ssl-certificate
+      vars:
+        domain: "{{ domain }}"
+
+    - name: Regenerate nginx config for {{ service_info['service_name'] }}
+      include_role:
+        name: odoo-database
+        tasks_from: nginx-create
+      vars:
+        dbname: "{{ service_info['service_name'] }}"
+

@@ -1,0 +1,59 @@
+---
+
+# fetch template (src) database info
+
+- name: "Metabase: fetch databases to backup"
+  community.general.postgresql_query:
+    db: meta
+    query: SELECT * FROM odoo_database WHERE use_backup = 't'
+    login_user: root
+  register: result_meta
+  failed_when: not result_meta.rowcount
+
+- name: "Transform result into JSON"
+  set_fact:
+    db_list: "{{ result_meta.query_result | map(attribute='name') | list}}"
+
+# dump databases
+
+- name: Backup Odoo Databases
+  community.general.postgresql_db:
+    name: "{{ item }}"
+    state: dump
+    target: /home/backup/{{ item }}-db-{{ lookup('pipe','date +%Y%m%d') }}.sql
+    login_user: root
+  with_items: "{{ db_list }}"
+
+# gz all sql files and remove SQL file
+
+- name: Find all SQL files in backup directory
+  find:
+    paths: /home/backup
+    patterns: '*.sql'
+  register: sql_files_data
+
+- name: "Transform result into JSON"
+  set_fact:
+    sql_files: "{{ sql_files_data.files | map(attribute='path') | list}}"
+
+- debug:
+    msg: "{{ sql_files }}"
+
+- name: Use gzip to compress a SQL file
+  community.general.archive:
+    path: "{{ item }}"
+    dest: "{{ item }}.gz"
+    format: gz
+  with_items: "{{ sql_files }}"
+
+- name: Remove SQL files
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items: "{{ sql_files }}"
+
+#  backup filestore
+
+- name: Backup Odoo Filestores
+  shell: "tar -zcvf /home/backup/{{ item }}-fs-{{ lookup('pipe','date +%Y%m%d') }}.tar.gz /home/{{ odoo_user }}/.local/share/Odoo/filestore/{{ item }}"
+  with_items: "{{ db_list }}"

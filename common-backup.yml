@@ -1,0 +1,36 @@
+---
+- name: Backup Data
+  hosts: odoo-cloud
+  remote_user: root
+
+  tasks:
+
+    - name: Backup Metabase
+      community.general.postgresql_db:
+        name: meta
+        state: dump
+        target: /home/backup/meta-{{ lookup('pipe','date +%Y%m%d') }}.sql
+        login_user: root
+
+
+    - debug:
+        msg: "{{ lookup('pipe','date +%Y-%m-%d-%H-%M-%S') }}"
+
+    - name: "Backup Odoo Cloud"
+      include_role:
+        name: odoo-database
+        tasks_from: db-backup
+
+
+
+    # clear dir
+
+    - name: Recursively find /tmp files older than 4 weeks and equal or greater than 1 megabyte
+      find:
+        paths: /home/backup/
+        age: 4w
+        recurse: yes
+      register: files_to_remove
+
+    - debug:
+        msg: "{{ files_to_remove }}"

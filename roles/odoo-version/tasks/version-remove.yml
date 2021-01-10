@@ -1,0 +1,70 @@
+---
+
+# stop and delete service
+
+- name: Check if Odoo Service {{ version }} already exists
+  stat:
+    path: '/etc/systemd/system/odoo-{{ version }}.service'
+  register: stat_result
+
+- name: Stop Odoo Service {{ version }}
+  service:
+    name: odoo-{{ version }}
+    state: stopped
+  when: stat_result.stat.exists
+
+- name: Disable service Odoo
+  service:
+    name: odoo-{{ version }}
+    enabled: yes
+  when: stat_result.stat.exists
+
+- name: Remove Odoo Service {{ version }}
+  file:
+    path: '/etc/systemd/system/odoo-{{ version }}.service'
+    state: absent
+
+- name: Reload systemctl daemon
+  systemd:
+    daemon_reload: yes
+
+# remove venv and server conf
+
+- name: Remove Odoo {{ version }} Virtualenv
+  file:
+    path: "/home/{{ odoo_user }}/venvs/odoo-{{ version }}-venv"
+    state: absent
+
+- name: Remove Odoo {{ version }} config file
+  file:
+    path: "/home/{{ odoo_user }}/conf/odoo-{{ version }}.conf"
+    state: absent
+
+# remove source directories
+
+- name: Find different source directory
+  find:
+    paths: "/home/{{ odoo_user }}/src/"
+    recurse: no
+    file_type: directory
+  register: list_dir_raw
+
+- name: Make list of repositories
+  set_fact:
+    directory_list: "{{ list_dir_raw.files | map(attribute='path') | list }}"
+
+- name: Remove Version Directory
+  file:
+    path: "{{ item }}/{{ version }}"
+    state: absent
+  loop: "{{ directory_list }}"
+
+# delete in matabase
+
+- name: "Metabase: Remove version"
+  community.general.postgresql_query:
+    db: meta
+    query: DELETE FROM odoo_version WHERE version = %(version)s
+    named_args:
+      version: "{{ version }}"
+    login_user: root

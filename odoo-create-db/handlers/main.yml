@@ -1,5 +1,0 @@
----
-# handlers file for odoo-create-db
-
-- name: nginx reload
-  service: name=nginx state=reloaded

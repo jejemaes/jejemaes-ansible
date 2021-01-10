@@ -1,0 +1,55 @@
+---
+- name: Setup Odoo Metabase
+  hosts: odoo-cloud
+  remote_user: root
+
+  tasks:
+    - name: Select query to db acme with positional arguments and non-default credentials
+      community.general.postgresql_query:
+        db: meta
+        query: SELECT * FROM odoo_version
+        login_user: root
+
+    - name: "Transform config into JSON"
+      set_fact:
+        config: "{{ caca.query_result[0] }}"
+
+    - debug:
+        msg: "{{ config.name }}"
+
+    - name: "Create the metabase"
+      postgresql_db:
+        name: meta
+        state: present
+        owner: root
+        login_user: root
+
+    # - name: "Give read/write privilege on tables to psql Odoo user"
+    #   postgresql_privs:
+    #     db: meta
+    #     type: table
+    #     privs: SELECT,INSERT,UPDATE
+    #     objs: odoo_database,odoo_version
+    #     roles: odoo
+    #     grant_option: no
+
+    # - name: "Give read/write privilege on sequences to psql Odoo user"
+    #   postgresql_privs:
+    #     db: meta
+    #     type: sequence
+    #     privs: USAGE,SELECT,UPDATE
+    #     objs: odoo_database_id_seq,odoo_version_id_seq
+    #     roles: odoo
+    #     grant_option: no
+
+    - name: Copy metabase SQL file to server
+      copy: src=files/odoo/metabase.sql dest=/tmp/meta.sql
+
+    - name: Import SQL in metabase
+      shell: psql meta < /tmp/meta.sql
+
+    - name: Remove metabase SQL file
+      file:
+        path: /tmp/meta.sql
+        state: absent
+

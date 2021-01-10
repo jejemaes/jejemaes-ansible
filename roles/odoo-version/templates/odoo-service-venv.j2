@@ -1,0 +1,16 @@
+[Unit]
+Description=Odoo {{ version }} (in venv)
+
+[Service]
+Type=simple
+User={{ odoo_user }}
+LimitNOFILE=16384
+ExecStart=/home/{{ odoo_user }}/venvs/odoo-{{ version }}-venv/bin/python /home/{{ odoo_user }}/src/odoo/{{ version }}/odoo-bin -c /home/{{ odoo_user }}/conf/odoo-{{ version }}.conf
+ExecStartPost=/bin/sh -c "/bin/echo $MAINPID > /home/{{ odoo_user }}/log/odoo-{{ version }}.pid"
+ExecStopPost=/bin/sh -c "/bin/rm /home/{{ odoo_user }}/log/odoo-{{ version }}.pid"
+TimeoutStopSec=5
+KillMode=mixed
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

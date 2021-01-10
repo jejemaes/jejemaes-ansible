@@ -1,0 +1,86 @@
+---
+
+- fail: msg="'dbname' is mandatory"
+  when: dbname is undefined or not dbname
+
+- fail: msg="'tmpl_dbname' is mandatory"
+  when: tmpl_dbname is undefined or not tmpl_dbname
+
+# fetch template (src) database info
+
+- name: "Metabase: fetch template db info {{ tmpl_dbname }}"
+  community.general.postgresql_query:
+    db: meta
+    query: SELECT * FROM odoo_database WHERE name = %(dbname)s
+    named_args:
+      dbname: "{{ tmpl_dbname }}"
+    login_user: root
+  register: result_meta
+  failed_when: not result_meta.rowcount
+
+- name: "Transform result into JSON"
+  set_fact:
+    db_info: "{{ result_meta.query_result[0] }}"
+
+# duplicate filestore
+
+- name: Duplicate filestore
+  shell:
+      cmd: cp -R /home/odoo/.local/share/Odoo/filestore/{{ tmpl_dbname }} /home/odoo/.local/share/Odoo/filestore/{{ dbname }}
+  become: yes
+  become_user: "{{ odoo_user }}"
+
+# duplicate the database
+
+- name: "Kill active connection to database {{ tmpl_dbname }}"
+  community.general.postgresql_query:
+    db: meta
+    query: SELECT
+        pg_terminate_backend(pg_stat_activity.pid)
+      FROM
+        pg_stat_activity
+      WHERE
+        pg_stat_activity.datname = %(dbname)s
+        AND pid <> pg_backend_pid()
+    named_args:
+      dbname: "{{ tmpl_dbname }}"
+    login_user: root
+
+- name: "Duplicate the database {{ tmpl_dbname }} into the new one {{ dbname }}"
+  community.general.postgresql_db:
+    name: "{{ dbname }}"
+    template: "{{ tmpl_dbname }}"
+    owner: "{{ odoo_user }}"
+    login_user: root
+
+- name: "Desactivate Out going mail Server"
+  community.general.postgresql_query:
+    db: "{{ dbname }}"
+    query: UPDATE ir_mail_server SET active = 'f';
+    login_user: root
+
+- name: "Desactivate Fetch Mail server"
+  community.general.postgresql_query:
+    db: "{{ dbname }}"
+    query: UPDATE fetchmail_server SET active = 'f';
+    login_user: root
+
+# register duplicated database
+
+- name: "Metabase: Remove possible database entry"
+  community.general.postgresql_query:
+    db: meta
+    query: DELETE FROM odoo_database WHERE name = %(dbname)s
+    named_args:
+      dbname: "{{ dbname }}"
+    login_user: root
+
+- name: "Metabase: Insert the duplicated Database {{ dbname }} in metabase (no backup)"
+  community.general.postgresql_query:
+    db: meta
+    login_user: root
+    query: INSERT INTO odoo_database (name, version_id, use_backup) VALUES (%(dbname)s, %(version_id)s, 'f')
+    named_args:
+      dbname: "{{ dbname }}"
+      version_id: "{{ db_info['version_id'] }}"
+

@@ -1,0 +1,25 @@
+---
+- name: Add a domain to Odoo database
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    dbname: no
+    domain: no
+    use_ssl: yes
+
+  tasks:
+
+    - name: "Add domains for {{ dbname }}"
+      include_role:
+        name: common-domain
+        tasks_from: domain-create
+      vars:
+        domain: "{{ domain }}"
+        service_name: "{{ dbname }}"
+
+    - name: Generate nginx config for {{ dbname }}
+      include_role:
+        name: odoo-database
+        tasks_from: nginx-create
+      vars:
+        dbname: "{{ dbname }}"

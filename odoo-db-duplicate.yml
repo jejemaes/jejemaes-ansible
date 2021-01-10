@@ -1,0 +1,42 @@
+---
+- name: Duplicate Odoo Database (db + nginx)
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    src_dbname: no
+    dst_dbname: no
+    domains: no
+
+  tasks:
+
+    - name: Duplicate Odoo Database {{ src_dbname }} into {{ dst_dbname }}
+      include_role:
+        name: odoo-database
+        tasks_from: db-copy
+      vars:
+        dbname: "{{ dst_dbname }}"
+        tmpl_dbname: "{{ src_dbname }}"
+
+    - name: "Add domains for {{ dst_dbname }}"
+      include_role:
+        name: common-domain
+        tasks_from: domain-create
+      vars:
+        domain: "{{ item }}"
+        service_name: "{{ dst_dbname }}"
+      with_items: "{{ domains.split(',') }}"
+
+    - name: Duplicate filestore
+      shell:
+          cmd: cp -R /home/odoo/.local/share/Odoo/filestore/{{ src_dbname }} /home/odoo/.local/share/Odoo/filestore/{{ dst_dbname }}
+      become: yes
+      become_user: odoo
+
+
+    - name: Generate nginx config for duplicate {{ dst_dbname }}
+      include_role:
+        name: odoo-database
+        tasks_from: nginx-create
+      vars:
+        dbname: "{{ dst_dbname }}"
+

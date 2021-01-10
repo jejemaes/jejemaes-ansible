@@ -1,0 +1,20 @@
+---
+
+# TODO : add theme repo
+# TODO use autostash for stash on server
+# TODO : use ssh instead of http
+
+- name: Checkout Odoo source from Github
+  become: yes
+  become_user: "{{ odoo_user }}"
+  git: dest=/home/{{ odoo_user }}/src/odoo/{{ version }}/ clone=yes update=yes repo=https://github.com/odoo/odoo.git version={{ version }}
+
+- name: Check if jejemaes Odoo repo has a {{ version }} branch
+  shell: git ls-remote --heads https://github.com/jejemaes/odoo-custom-addons.git {{ version }} | wc -l
+  register: jejemaes_branch_exists
+
+- name: Checkout jejemaes source from Github (if branch exists)
+  become: yes
+  become_user: "{{ odoo_user }}"
+  git: dest=/home/{{ odoo_user }}/src/jejemaes/{{ version }}/ clone=yes update=yes repo=https://github.com/jejemaes/odoo-custom-addons.git version={{ version }}
+  when: jejemaes_branch_exists.stdout == '1'

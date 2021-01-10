@@ -1,0 +1,12 @@
+---
+- name: Remove Odoo Version
+  hosts: odoo-cloud
+  remote_user: root
+  vars:
+    version: "11.0"
+
+  tasks:
+
+    - include_role:
+        name: odoo-version
+        tasks_from: version-remove
