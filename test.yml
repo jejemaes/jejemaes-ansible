@@ -1,0 +1,14 @@
+---
+- name: test clone git
+  hosts: odoo-cloud
+  remote_user: root
+  # become_user: odoo
+  # become: yes
+  tasks:
+    - debug:
+        msg: "{{ github_dev_token }}"
+    - name: Update Source Code
+      include_role:
+        name: odoo-checkout-source
+      vars:
+        version: 14.0
