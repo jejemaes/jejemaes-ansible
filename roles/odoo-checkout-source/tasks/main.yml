@@ -2,19 +2,75 @@
 
 # TODO : add theme repo
 # TODO use autostash for stash on server
-# TODO : use ssh instead of http
 
 - name: Checkout Odoo source from Github
   become: yes
   become_user: "{{ odoo_user }}"
-  git: dest=/home/{{ odoo_user }}/src/odoo/{{ version }}/ clone=yes update=yes repo=https://github.com/odoo/odoo.git version={{ version }}
+  git:
+    repo: "git@github.com:odoo/odoo.git"
+    version: "{{ version }}"
+    dest: "/home/{{ odoo_user }}/src/odoo/{{ version }}/"
+    clone: yes
+    update: yes
+    key_file: "/home/{{ odoo_user }}/.ssh/id_rsa"
+    accept_hostkey: yes
 
-- name: Check if jejemaes Odoo repo has a {{ version }} branch
-  shell: git ls-remote --heads https://github.com/jejemaes/odoo-custom-addons.git {{ version }} | wc -l
-  register: jejemaes_branch_exists
 
-- name: Checkout jejemaes source from Github (if branch exists)
+- name: Check if jejemaes-advanced-addons Odoo repo has a {{ version }} branch
   become: yes
   become_user: "{{ odoo_user }}"
-  git: dest=/home/{{ odoo_user }}/src/jejemaes/{{ version }}/ clone=yes update=yes repo=https://github.com/jejemaes/odoo-custom-addons.git version={{ version }}
-  when: jejemaes_branch_exists.stdout == '1'
+  shell: git ls-remote --heads git@github.com:jejemaes/odoo-advanced-addons.git {{ version }} | wc -l
+  register: advanced_branch_exists
+
+- name: Checkout jejemaes-advanced-addons source from Github
+  become: yes
+  become_user: "{{ odoo_user }}"
+  git:
+    repo: "git@github.com:jejemaes/odoo-advanced-addons.git"
+    version: "{{ version }}"
+    dest: "/home/{{ odoo_user }}/src/jejemaes-advanced-addons/{{ version }}/"
+    clone: yes
+    update: yes
+    key_file: "/home/{{ odoo_user }}/.ssh/id_rsa"
+    accept_hostkey: yes
+  when: advanced_branch_exists.stdout == '1'
+
+
+- name: Check if jejemaes-custom-addons Odoo repo has a {{ version }} branch
+  become: yes
+  become_user: "{{ odoo_user }}"
+  shell: git ls-remote --heads git@github.com:jejemaes/odoo-custom-addons.git {{ version }} | wc -l
+  register: custom_branch_exists
+
+- name: Checkout jejemaes-custom-addons source from Github
+  become: yes
+  become_user: "{{ odoo_user }}"
+  git:
+    repo: "git@github.com:jejemaes/odoo-custom-addons.git"
+    version: "{{ version }}"
+    dest: "/home/{{ odoo_user }}/src/jejemaes-custom-addons/{{ version }}/"
+    clone: yes
+    update: yes
+    key_file: "/home/{{ odoo_user }}/.ssh/id_rsa"
+    accept_hostkey: yes
+  when: custom_branch_exists.stdout == '1'
+
+
+- name: Check if muk-it/web repo has a {{ version }} branch
+  become: yes
+  become_user: "{{ odoo_user }}"
+  shell: git ls-remote --heads git@github.com:muk-it/muk_web.git {{ version }} | wc -l
+  register: mukit_web_branch_exists
+
+- name: Checkout jejemaes-custom-addons source from Github
+  become: yes
+  become_user: "{{ odoo_user }}"
+  git:
+    repo: git@github.com:muk-it/muk_web.git
+    version: "{{ version }}"
+    dest: "/home/{{ odoo_user }}/src/mukit-web/{{ version }}/"
+    clone: yes
+    update: yes
+    key_file: "/home/{{ odoo_user }}/.ssh/id_rsa"
+    accept_hostkey: yes
+  when: mukit_web_branch_exists.stdout == '1'
