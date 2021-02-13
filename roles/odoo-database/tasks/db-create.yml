@@ -43,7 +43,7 @@
   become: yes
   become_user: "{{ odoo_user }}"
   shell:
-    cmd: /home/{{ odoo_user }}/venvs/odoo-{{ version }}-venv/bin/python /home/{{ odoo_user }}/src/odoo/{{ version }}/odoo-bin -d {{ dbname }} --stop-after-init --logfile=/home/{{ odoo_user }}/log/odoo-{{ version }}-init-{{ dbname }}.log --xmlrpc-port={{ config['xmlrpc_port'] - 1 }}
+    cmd: /home/{{ odoo_user }}/venvs/odoo-{{ version }}-venv/bin/python /home/{{ odoo_user }}/src/odoo/{{ version }}/odoo-bin -d {{ dbname }} --stop-after-init --logfile=/home/{{ odoo_user }}/log/odoo-{{ version }}-init-{{ dbname }}.log --xmlrpc-port={{ config['xmlrpc_port'] - 1 }} --without-demo=base
 
 # register database
 
