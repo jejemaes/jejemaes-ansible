@@ -1,0 +1,4 @@
+# vars/main.yml
+
+# Github FQDN
+GIT_SERVER_FQDN: github.com

@@ -1,0 +1,44 @@
+---
+# TODO: this file is not used anywhere !!
+# should it be imported ???
+
+
+- name: Get the content of known hosts
+  shell: "cat /home/{{ user }}/.ssh/known_hosts | grep {{ GIT_SERVER_FQDN }}"
+  register: host_stat
+  failed_when: host_stat.rc > 1
+
+# add github in known hosts
+- name: Modify known hosts
+  block:
+  - name: Fetch GitHub public key
+    command: "ssh-keyscan -T 10 {{ GIT_SERVER_FQDN }}"
+    register: keyscan
+
+  - name: Add GitHub public key to ssh known_hosts
+    lineinfile:
+      path: "/home/{{ user }}/.ssh/known_hosts"
+      create: yes
+      line: "{{ item }}"
+    with_items: '{{ keyscan.stdout_lines }}'
+  when: host_stat.rc == 1
+
+- name: Get key content
+  command: "cat /home/{{ user }}/.ssh/id_rsa.pub"
+  register: key_content
+
+- name: Add SSH public key to GitHub account
+  uri:
+    url: "https://api.{{ GIT_SERVER_FQDN }}/user/keys"
+    validate_certs: no
+    method: POST
+    body:
+      title: "VPS User {{ user }}"
+      key: "{{ key_content.stdout }}"
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+      Authorization: "token {{ github_dev_token }}"
+    status_code:
+    - 201
+    - 422

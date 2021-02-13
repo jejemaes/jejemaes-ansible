@@ -57,8 +57,14 @@
   pip:
     name: libsass
 
-- name: "Create Odoo User"
-  user: name={{ user }} comment="Odoo User" shell=/bin/bash create_home=yes state=present
+- name: "Create Unix Odoo User"
+  include_role:
+    name: common-create-user
+  vars:
+    user: "{{ odoo_user }}"
+    user_uid: "{{ odoo_user_uid }}"
+
+# TODO not sure this is still required
 - name: "Odoo User is sudoer"
   template: src=templates/odoo-sudoers.j2 dest=/etc/sudoers.d/{{ user }} validate='visudo -cf %s'
 
