@@ -57,6 +57,9 @@ server {
     # common gzip
     gzip_types text/css text/less text/plain text/xml application/xml application/json application/javascript;
     gzip on;
+
+    # upload file size
+    client_max_body_size 15M;
 }
 
     {% else %}
@@ -97,6 +100,9 @@ server {
     # common gzip
     gzip_types text/css text/less text/plain text/xml application/xml application/json application/javascript;
     gzip on;
+
+    # upload file size
+    client_max_body_size 15M;
 }
 
     {% endif %}
