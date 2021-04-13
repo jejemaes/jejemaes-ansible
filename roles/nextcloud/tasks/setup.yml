@@ -1,0 +1,88 @@
+---
+
+# - name: Install docker sdk
+#   pip:
+#     name: docker
+
+# - name: Create nextcloud unix group
+#   ansible.builtin.group:
+#     name: "{{ nextcloud_user }}"
+#     state: present
+
+# - name: Create Nexcloud User
+#   ansible.builtin.user:
+#     name: "{{ nextcloud_user }}"
+#     uid: "{{ nextcloud_uid }}"
+#     group: "{{ nextcloud_user }}"
+#     create_home: yes
+#     home: "/home/{{ nextcloud_user }}/"
+#     generate_ssh_key: no
+#     shell: /bin/bash
+#     state: present
+
+# - name: Pull nextcloud docker image
+#   community.general.docker_image:
+#     name: nextcloud:17-fpm-alpine
+#     source: pull
+
+# - name: Subdirectories of nextcloud home dir
+#   become: yes
+#   become_user: "{{ nextcloud_user }}"
+#   file:
+#     path: /home/{{ nextcloud_user }}/{{ item }}
+#     state: directory
+#     mode: '0755'
+#     owner: "{{ nextcloud_user }}"
+#     group: "{{ nextcloud_user }}"
+#   with_items:
+#     - config
+#     - data
+
+- name: Create nextcloud Postgres User
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    name: "{{ nextcloud_user }}"
+    state: present
+    password: thispassword007
+
+- name: "Create nextcloud database"
+  become: yes
+  become_user: postgres
+  postgresql_db:
+    name: nextcloud
+    state: present
+    owner: "{{ nextcloud_user }}"
+
+- name: Ensure nextcloud user have access to database
+  become: yes
+  become_user: postgres
+  postgresql_privs:
+    db: nextcloud
+    role: "{{ nextcloud_user }}"
+    objs: ALL_IN_SCHEMA
+    privs: SELECT,INSERT,UPDATE,DELETE
+
+
+
+- name: Run docker container
+  docker_container:
+    name: nextcloud
+    image: nextcloud:17-fpm-alpine
+    restart: yes
+    restart_policy: always
+    pull: yes
+    volumes:
+      - '/home/{{ nextcloud_user }}/config:/var/www/html/config'
+      - '/home/{{ nextcloud_user }}/data:/var/www/html/data'
+    env:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: thispassword007
+      POSTGRES_HOST: 172.0.0.1
+      NEXTCLOUD_URL: nextcloud.jejemaes.net
+      NEXTCLOUD_TRUSTED_DOMAINS: nextcloud.jejemaes.net
+      NEXTCLOUD_ADMIN_USER: jerome
+      NEXTCLOUD_ADMIN_PASSWORD: jerome
+    ports:
+      - '9000:9000'
