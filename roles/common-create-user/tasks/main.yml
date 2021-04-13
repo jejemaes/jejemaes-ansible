@@ -1,7 +1,7 @@
 ---
 # create unix user
 - name: "Create unix user {{ user }}"
-  group:
+  user:
    name: "{{ user }}"
    uid: "{{ user_uid }}"
    group: "{{ user }}"
@@ -9,7 +9,6 @@
    shell: /bin/bash
    create_home: yes
    generate_ssh_key: no # handle manually after
-   state: present
 
 # Note the following is inpired from https://github.com/asifmahmud/ansible-git-clone
 
@@ -21,7 +20,7 @@
 
 - name: Generate SSH key for accessing GitHub
   command: "ssh-keygen -t rsa -f /home/{{ user }}/.ssh/id_rsa -N ''"
-  when: not key_stat_result.stat.exists
+  when: not key_stat_result.stat.exists and create_ssh
 
 # create 'known_hosts'
 - name: Check if known_host exists

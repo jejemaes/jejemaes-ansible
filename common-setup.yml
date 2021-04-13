@@ -7,7 +7,7 @@
 
   tasks:
 
-    # common pkg dependencies
+    # Common pkg dependencies
 
     - name: Installation de Libs
       apt: name={{ item }} update_cache=yes state=latest
@@ -22,22 +22,63 @@
         - vim
         - xz-utils
 
-    # backup directory
+
+    # Docker
+
+    - name: Install Dependencies for Docker
+      apt:
+        name: "{{item}}"
+        state: present
+        update_cache: yes
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
+
+    - name: Adding GPG keys
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Adding repository docker
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: Install docker
+      apt:
+        name: "{{item}}"
+        state: latest
+        update_cache: yes
+      loop:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+
+    - name: Start docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    # Backup directory
 
     - name: Directory for backups
       file:
         path: /home/backup
         state: directory
 
-    # setup Odoo
+    # Setup Odoo
 
     - name: Setup Odoo
       include_role:
         name: odoo-setup
 
-    # setup Web
+    # Setup Web
 
-    # metabase
+    # Metabase
 
-    - name: Include metabase playbook
-      import_playbook: commmon-metabase.yaml
+    - name: "Include metabase playbook"
+      import_playbook: commmon-metabase.yml

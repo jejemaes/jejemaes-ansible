@@ -4,10 +4,10 @@ Ansible playbooks to setup and manage Odoo Cloud, Wordpress sites, ... on my VPS
 
 Missing files are
  - **hosts**: to set your server IP
-  ```
+```
 [cloud]
 69.69.69.69
- ```
+```
  - **.env**: personal environment variables
 
 
@@ -22,6 +22,13 @@ This playbooks depends on the community collection (https://galaxy.ansible.com/c
 The metabase contains the running service catalog. The purpose is to have a global overview of the accounts, services and used ports. From that database, we can recreate all server configurations.
 
 > ansible-playbook common-metabase.yml
+
+
+## Backup
+
+Create backups for every service (database, filestore, ...)
+
+> ansible-playbook common-backup.yml
 
 
 ## Setup Server

@@ -2,3 +2,4 @@
 
 # Github FQDN
 GIT_SERVER_FQDN: github.com
+create_ssh: no

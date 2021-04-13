@@ -9,6 +9,5 @@
         msg: "{{ github_dev_token }}"
     - name: Update Source Code
       include_role:
-        name: odoo-checkout-source
-      vars:
-        version: 14.0
+        name: nextcloud
+        tasks_from: setup
