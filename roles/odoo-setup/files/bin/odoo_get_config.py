@@ -18,6 +18,7 @@ def _compute_port(version, is_longpolling=False):
     base_version = 11
     return BASE_XML_PORT + (version % (int(float(BASE_VERSION)))) * int(float(BASE_VERSION)) + offset
 
+
 def get_config(argv):
     """ Return the port on which the odoo version should run. '--longpolling' option indicates if we need the longpolling port.
         Each version will have a range of 11 possible port. In this range, the first is the port, and and the 3rd is the longpolling port.
@@ -35,12 +36,17 @@ def get_config(argv):
 
     addons_path_list = []
     for item in os.listdir(base_src_path):
-        if item != 'odoo':
+        if item not in ['odoo', 'enterprise']:
             full_path = os.path.join(base_src_path, item)
             if os.path.isdir(full_path):  # ~/src/theme, ~/src/jejemaes, ...
                 full_path = os.path.join(base_src_path, item, version_str)
                 if os.path.isdir(full_path):  # ~/src/theme/14.0, ~/src/jejemaes/14.0, ...
                     addons_path_list.append(full_path)
+
+    enterprise_full_path = os.path.join(base_src_path, 'enterprise', version_str)
+    if os.path.isdir(enterprise_full_path):  # ~/src/enterprise/14.0/
+        addons_path_list.append(enterprise_full_path)
+
     addons_path_list.append(os.path.join(base_src_path, 'odoo', version_str, 'addons'))  # odoo base addons are late
 
     # TODO: compute it, formula in openerp script
